@@ -2,133 +2,75 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Map</title>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Realtime location tracker</title>
+
+   <!-- leaflet css  HolaNiai12!-->
+   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+   <style>
+       body {
+           margin: 0;
+           padding: 0;
+       }
+
+       #map {
+           width: 100%;
+           height: 100vh;
+       }
+   </style>
 </head>
 
-<style>
-    #map {
-        width: 100%;
-        height: 100vh;
-    }
-
-    body {
-        margin: 0px;
-        padding: 0px;
-    }
-</style>
-
 <body>
-    <div id="map"></div>
+   <div id="map"></div>
 </body>
-
 </html>
 
-<!-- google maps api key  -->
-<script src="https://maps.googleapis.com/maps/api/js?key=[AIzaSyB6EKgNmPy-BL3ZXxvh1QvjVv8q93aPLQ0]"></script>
-
+<!-- leaflet js  -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
+   // Map initialization
+   var map = L.map('map').setView([-25.2885765,-57.6008964], 6);
 
-    //Google map setup
-    let map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 28.3949, lng: 84.1240 },
-        zoom: 8,
-    })
+   //osm layer
+   var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+   });
+   osm.addTo(map);
 
+   if(!navigator.geolocation) {
+       console.log("Your browser doesn't support geolocation feature!")
+   } else {
+       setInterval(() => {
+           navigator.geolocation.getCurrentPosition(getPosition)
+       }, 2000);
+   }
 
-    //Marker positions
-    const markers = [
-        { lat: 28.323, lng: 83.344, info: "First marker" },
-        { lat: 27.323, lng: 83.244, info: "Second marker" },
-        { lat: 28.733, lng: 84.254, info: "Third marker" },
-        { lat: 29.263, lng: 82.221, info: "Fourth marker" },
-        { lat: 28.733, lng: 83.121, info: "Fifth marker" },
-    ]
+   var marker, circle;
 
+   function getPosition(position){
+       // console.log(position)
+       var lat = position.coords.latitude
+       var long = position.coords.longitude
+       var accuracy = position.coords.accuracy
 
-    //Multiple markers add to the map
-    markers.forEach(m => {
-        const marker = new google.maps.Marker({
-            position: { lat: m.lat, lng: m.lng },
-            icon: "img/custom_marker.png",
-            draggable: false,
-        });
+       if(marker) {
+           map.removeLayer(marker)
+       }
 
-        const popupContent = new google.maps.InfoWindow()
+       if(circle) {
+           map.removeLayer(circle)
+       }
 
-        google.maps.event.addListener(marker, 'click', (function (marker) {
-            return function () {
-                popupContent.setContent(m.info)
-                popupContent.open(map, marker)
-            }
-        })(marker)
-        )
-        marker.setMap(map);
-    })
+       marker = L.marker([lat, long])
+       circle = L.circle([lat, long], {radius: accuracy})
 
-    //GeoJson
-    map.data.loadGeoJson('data/data.json')
-    map.data.setStyle({
-        fillColor: 'green',
-        strokeColor: "red",
-        fillOpacity: 0.7
-    })
+       var featureGroup = L.featureGroup([marker, circle]).addTo(map)
 
-    map.data.addListener('click', function (e) {
-        console.log(e)
+       map.fitBounds(featureGroup.getBounds())
 
-        const info = e.feature.getProperty('info')
-        const infoWindow = new google.maps.InfoWindow()
-
-        infoWindow.setContent(info)
-        infoWindow.setPosition(e.latLng)
-        infoWindow.open(map)
-    })
-
-
-    // geolocation 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
-
-                const marker = new google.maps.Marker({
-                    position: pos,
-                });
-                marker.setMap(map)
-                map.setCenter(pos);
-                map.setZoom(11)
-            }
-        );
-    } else {
-        console.log('Geolocation is not supported by your browser')
-    }
-
-
-    // Google marker
-    // const marker = new google.maps.Marker({
-    //     position: { lat: 28.3949, lng: 84.1240 },
-    //     title: "This is my test marker",
-    //     draggable: true
-    // });
-
-    // const popupContent = new google.maps.InfoWindow()
-
-    // google.maps.event.addListener(marker, 'click', (function (marker) {
-    //     return function () {
-    //         popupContent.setContent("This is the popup test!")
-    //         popupContent.open(map, marker)
-    //     }
-    // })(marker)
-
-    // )
-
-    // marker.setMap(map);
-
+       console.log("Your coordinate is: Lat: "+ lat +" Long: "+ long+ " Accuracy: "+ accuracy)
+   }
 
 </script>
